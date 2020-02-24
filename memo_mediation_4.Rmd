@@ -39,6 +39,7 @@ output.model <-
 
 #to get the data
 input.data <- lavInspect(output.model$fit, what = "data")
+head(input.data)
 ```
 
 ```{r testing}
