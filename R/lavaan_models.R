@@ -21,7 +21,9 @@ lavaan.model <- function(y,
                          # Number of bootstrap resamples
                          B = 5000,
                          seed = 1234,
-                         process.model = 4) {
+                         ci = .95,
+                         process.model = 4,
+                         print = TRUE) {
   # Set Seed
   set.seed(seed)
 
@@ -158,28 +160,91 @@ lavaan.model <- function(y,
         data = data,
         # Requires DWLS for bootstrapping
         estimator = "DWLS",
-        se = "bootstrap",
+        se = "robust.sem",
         bootstrap = B
       )
     } else {
       fit <- sem(
         model,
         data = data,
-        se = "bootstrap",
+        se = "robust.sem",
         test = test,
         bootstrap = B
       )
     }
+
+    # Run bootstrap on coefficients
+    est_boot <- bootstrapLavaan(
+      fit,
+      FUN = function(x) parameterestimates(x)$est,
+      parallel = "multicore",
+      R = B
+    )
+
+    boot_out <- data.frame(
+      param = as.character(parameterestimates(fit)$lab),
+      t(
+        rbind(
+          est = parameterestimates(fit)$est,
+          se.boot = apply(est_boot, 2, sd),
+          apply(est_boot, 2, quantile, c((1 - ci) / 2, ci + (1 - ci) / 2)),
+          p.boot = 2 * pmin(colMeans(est_boot > 0), colMeans(est_boot < 0))
+        )
+      )
+    )
+
+    # Remove empty parameters
+    boot_out <- boot_out[boot_out$param != "", ]
+
+    # Set column names
+    colnames(boot_out)[c(4:5)] <- c("ci.lb.boot", "ci.ub.boot", "p.value")
+
+    # Set row names
+    rownames(boot_out) <- boot_out$param
+
+    # Drop param variable
+    boot_out <- boot_out[, -1]
+
+    # Return fit and bootstrap results
+
+    # Show summary results
+    if (print) {
+      cat(
+        "\n",
+        "\n", "Summary Results",
+        "\n",
+        "\n",
+        sep = ""
+      )
+
+      print(
+        parameterEstimates(
+          fit,
+          zstat = TRUE,
+          standardized = FALSE,
+          cov.std = FALSE,
+          rsquare = TRUE,
+          output = "pretty"
+        )
+      )
+
+      cat(
+        "\n",
+        "\n", "Bootstrap Results",
+        "\n",
+        "\n",
+        sep = ""
+      )
+
+      print(boot_out)
+    }
+
+    return(
+      list(
+        fit = fit,
+        boot = boot_out
+      )
+    )
+
   }
-
-  # Output
-  cat(
-    "\n",
-    "\n", "PROCESS Model Specifed: ", process.model,
-    "\n",
-    sep = ""
-  )
-
-  # Return results as lavaan object
-  fit
 }
