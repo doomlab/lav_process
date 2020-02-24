@@ -168,15 +168,20 @@ lavaan.model <- function(y,
         model,
         data = data,
         se = "robust.sem",
+        missing = "ML",
         test = test,
         bootstrap = B
       )
     }
 
     # Run bootstrap on coefficients
+    # Required for replication to set (iseed)
+    RNGkind("L'Ecuyer-CMRG")
+
     est_boot <- bootstrapLavaan(
       fit,
       FUN = function(x) parameterestimates(x)$est,
+      iseed = seed,
       parallel = "multicore",
       R = B
     )
