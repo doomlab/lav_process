@@ -167,7 +167,7 @@ lavaan.model <- function(y,
       fit <- sem(
         model,
         data = data,
-        se = "robust.sem",
+        #se = "robust.sem",
         missing = "ML",
         test = test,
         bootstrap = B

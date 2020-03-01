@@ -38,7 +38,7 @@ output.model <-
                print = FALSE) #just to save time now
 
 #to get the data
-input.data <- lavInspect(output.model$fit, what = "data")
+input.data <- lavInspect(output.model[["fit"]], what = "data")
 head(input.data)
 ```
 
@@ -299,15 +299,21 @@ lavaan.model2 <- function(y,
 ```{r}
 #messy data
 library(faux)
-temp <- messy(master, prop = .1, "mpg", replace = NA)
+temp <- messy(master, prop = .1, "hp", replace = NA)
 
 output.model2 <-
-  lavaan.model2(y = "mpg", 
+  lavaan.model(y = "mpg", 
                x = "cyl",
                m = "hp", 
                data = temp,
                B = 100,
                print = FALSE) #just to save time now
+summary(output.model2$fit)
+output.model2$boot
 
+input.data <- lavInspect(output.model2$fit, what = "data")
+View(input.data)
+
+##look up runmi - semtools 
 ```
 
